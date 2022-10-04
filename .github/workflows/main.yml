@@ -1,0 +1,80 @@
+name: Development build
+
+on:
+  [push, workflow_dispatch]
+
+jobs:
+  build:
+    name: Development build
+    runs-on: MacStadium
+    steps:
+      - name: Remove work folders
+        env:
+          password: ${{ secrets.ELLIE_MINI_SECRET }}
+        run: |
+          echo "before"
+          ls -lah ./
+          echo $password | sudo -S rm -rf ./* || true
+          echo $password | sudo -S rm -rf ./.??* || true
+          echo "after"
+          ls -lah ./
+          
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Checkout repository submodules
+        run: git submodule update --init --recursive
+        
+      - name: Get JRE8
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: build.yml
+          path: depends
+          workflow_conclusion: success
+          repo: PojavLauncherTeam/android-openjdk-build-multiarch
+          branch: jre8-ios-jitjailed
+          name: jre8-ios-aarch64
+
+      - name: Get JRE17
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: build.yml
+          path: depends
+          workflow_conclusion: success
+          repo: PojavLauncherTeam/android-openjdk-build-multiarch
+          branch: buildjre17
+          name: jre17-ios-aarch64
+
+      - name: Build packages
+        env:
+          password: ${{ secrets.ELLIE_MINI_SECRET }}
+        run: |
+          export NOSTDIN=1 SUDOPASS=$password RUNNER=1
+          export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+          gmake -j$(sysctl -n hw.ncpu) ipa
+
+      - name: Upload regular artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: net.kdt.pojavlauncher.development_iphoneos-arm.deb
+          path: artifacts/net.kdt.pojavlauncher.*_iphoneos-arm.deb
+
+      - name: Upload rootless artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: net.kdt.pojavlauncher.development-rootless_iphoneos-arm.deb
+          path: artifacts/net.kdt.pojavlauncher.*_iphoneos-arm64.deb
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: net.kdt.pojavlauncher.ipa
+          path: artifacts/net.kdt.pojavlauncher-*.ipa
+
+      - name: Upload PojavLauncher.dSYM
+        uses: actions/upload-artifact@v2
+        with:
+          name: PojavLauncher.dSYM
+          path: artifacts/PojavLauncher.dSYM
