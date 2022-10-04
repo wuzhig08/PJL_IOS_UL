@@ -1,0 +1,3 @@
+files:
+  - source: /Natives/en.lproj/Localizable.strings
+    translation: /Natives/%osx_code%/%original_file_name%
