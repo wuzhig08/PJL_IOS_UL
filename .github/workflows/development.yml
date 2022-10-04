@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     name: Development build
-    runs-on: MacStadium
+    runs-on: macOS-latest
     steps:
       - name: Remove work folders
         env:
